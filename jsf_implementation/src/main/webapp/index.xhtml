@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://xmlns.jcp.org/jsf/passthrough">
+<h:head>
+    <h:outputStylesheet library="css" name="global.css"/>
+    <h:outputStylesheet library="css" name="index.css"/>
+</h:head>
+<h:body>
+
+    <title>Title</title>
+    <main class="flex-center-both text-center">
+        <h:form>
+            <div>
+                <h:inputText value="#{indexBean.userName}" p:type="text" p:maxlength="30" p:required="true"
+                             p:placeholder="Ihr Name" required="true"/>
+            </div>
+            <div>
+                <h:inputText value="#{indexBean.roomId}" p:type="text" p:maxlength="10" p:required="true"
+                             p:placeholder="Raummname" required="true"/>
+            </div>
+            <div>
+                <h:commandButton action="#{indexBean.enterRoom}" value="Raum beitreten"/>
+            </div>
+            <div>
+                <h:commandButton action="#{indexBean.createRoom}" value="Raum erstellen"/>
+            </div>
+        </h:form>
+    </main>
+</h:body>
+</html>

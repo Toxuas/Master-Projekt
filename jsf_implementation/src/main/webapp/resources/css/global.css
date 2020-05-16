@@ -1,0 +1,35 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+input[type=text] {
+    border: 1px solid #ccc;
+    padding: 5px;
+    border-radius: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.flex-center-both {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.text-center {
+    text-align: center;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    color: #bf6000;
+    text-decoration: underline;
+}
+
+a:visited {
+    text-decoration: none;
+}
