@@ -87,7 +87,7 @@ function initSocket() {
                 break;
         }
     };
-    socket.onclose = function(event) {
+    socket.onclose = function (event) {
         console.log(event);
         console.log(loc);
         console.log(event.reason.length);
