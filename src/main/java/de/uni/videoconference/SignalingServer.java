@@ -17,7 +17,6 @@ import java.util.logging.Logger;
 public class SignalingServer {
     private static final Logger log = Logger.getLogger(SignalingServer.class.getName());
     private static final Set<Room> rooms = Collections.synchronizedSet(new HashSet<>());
-    //  private static final Set<Session> peers = Collections.synchronizedSet(new HashSet<>());
 
     @OnOpen
     public void onOpen(@PathParam("action") String action, @PathParam("roomId") String roomId, @PathParam("userName") String userName,
