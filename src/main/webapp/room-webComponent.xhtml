@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+>
+<h:head>
+    <!-- https://stackoverflow.com/questions/3605238/how-do-you-pass-view-parameters-when-navigating-from-an-action-in-jsf2
+    parameters are retrieved, to later process them in room.js-->
+    <f:metadata>
+        <f:viewParam name="action" value="${indexBean.action}"/>
+        <f:viewParam name="roomId" value="${indexBean.roomId}"/>
+        <f:viewParam name="userName" value="${indexBean.userName}"/>
+    </f:metadata>
+</h:head>
+<h:body>
+    <title>Title</title>
+    <main class="flex-center-both text-center">
+        <web-component socketHostname="" socketPathname=""></web-component>
+    </main>
+</h:body>
+</html>
+
