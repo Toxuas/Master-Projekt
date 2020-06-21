@@ -22,7 +22,7 @@ class VideoConference extends HTMLElement {
     }
 
     connectedCallback() {
-        let loc = window.location; //https://developer.mozilla.org/en-US/docs/Web/API/URL
+        let loc = window.location; //https://developer.mozilla.org/en-US/docs/Web/API/Location
         let socketHostname = this.getAttribute("socketHostname");
         let socketPathname = this.getAttribute("socketPathname");
 
