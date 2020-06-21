@@ -35,7 +35,8 @@ public class SignalingServer {
 
         Message message = new Message(Json.createObjectBuilder()
                 .add("event", "getNewUserId").add("data", "You are now connected.")
-                .add("roomId", requestedRoom.getRoomId()).add("sessionId", session.getId()).build());
+                .add("roomId", requestedRoom.getRoomId()).add("sessionId", session.getId())
+                .add("userName", userName).build());
 
         //send message to new connected user with his session id
         try {
@@ -48,6 +49,7 @@ public class SignalingServer {
         for (Session peer : requestedRoom.getSessions()) {
             JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
             jsonObjectBuilder.add("sessionId", peer.getId());
+            jsonObjectBuilder.add("userName", peer.getPathParameters().get("userName"));
             jsonArrayBuilder.add(jsonObjectBuilder);
         }
         JsonArray jsonArray = jsonArrayBuilder.build();
@@ -177,15 +179,4 @@ public class SignalingServer {
         }
         log.info(t.getMessage());
     }
-/**
- public void onChunk(@Observes @Chunk ByteBuffer buffer) {
- for (Session session : sessions) {
- try {
- session.getBasicRemote().sendBinary(buffer);
- } catch (IOException ex) {
- ex.printStackTrace();
- }
- }
- }
- */
 }

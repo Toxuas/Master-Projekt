@@ -5,7 +5,7 @@
 >
 <h:head>
     <!-- https://stackoverflow.com/questions/3605238/how-do-you-pass-view-parameters-when-navigating-from-an-action-in-jsf2
-    parameters are retrieved, to later process them in room.js-->
+    parameters are retrieved, to later process them in Video-Conference.js-->
     <f:metadata>
         <f:viewParam name="action" value="${indexBean.action}"/>
         <f:viewParam name="roomId" value="${indexBean.roomId}"/>
@@ -15,10 +15,64 @@
 <h:body>
     <title>Title</title>
     <main class="flex-center-both text-center">
-        <div id="videoContainer">
-            <video id="localVideo" muted="muted" autoplay="autoplay" playsinline="playsinline"/>
-        </div>
-        <script type="text/javascript" src="resources/js/room.js"></script>
+        <video-conference socketPathname="/video-conference/signaling" template="video-conference-default">
+            <span slot="video-conference headline">Video Konferenz</span>
+        </video-conference>
     </main>
+
+    <template id="video-conference-default">
+        <style>
+            video {
+                border: 1px solid orange;
+            }
+
+            h1 {
+                text-align: center;
+                font-family: Arial;
+            }
+
+            span.stream-headline {
+                text-align: center;
+                font-weight: bold;
+                font-family: Arial;
+                display: block;
+            }
+
+            div.content-wrapper {
+                display: flex;
+            }
+        </style>
+        <h1>
+            <slot name="video-conference headline">Default Headline</slot>
+        </h1>
+    </template>
+    <template id="video-conference-blue">
+        <style>
+            video {
+                border: 1px solid blue;
+            }
+
+            h3 {
+                text-align: center;
+                font-family: Bahnschrift
+            }
+
+            span.stream-headline {
+                text-align: center;
+                font-weight: bold;
+                font-family: Arial;
+                display: block;
+            }
+
+            div.content-wrapper {
+                display: flex;
+            }
+        </style>
+        <h3>
+            <slot name="video-conference headline">Default Headline</slot>
+        </h3>
+    </template>
+    <script type="text/javascript" src="resources/js/Video-Conference.js"></script>
 </h:body>
 </html>
+

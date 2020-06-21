@@ -1,5 +1,4 @@
-'use strict';
-
+//'use strict';
 class VideoConference extends HTMLElement {
 
     constructor() {
@@ -9,6 +8,17 @@ class VideoConference extends HTMLElement {
         this.localSessionId = null;
         this.localStream = null;
         this.peerConnections = [];
+        this.contentWrapper = document.createElement("div");
+        this.contentWrapper.classList.add("content-wrapper");
+
+        // Get template content from DOM
+        const templateName = this.getAttribute("template");
+        const template = document.getElementById(templateName);
+        const templateContent = template.content;
+        // Create new Shadow Root
+        this.attachShadow({mode: "open"})
+            .appendChild(templateContent.cloneNode(true));
+        this.shadowRoot.append(this.contentWrapper);
     }
 
     connectedCallback() {
@@ -27,7 +37,7 @@ class VideoConference extends HTMLElement {
         let socket_url;
         if (loc.protocol === "https:") {
             socket_url = "wss:";
-        } else if (loc.hostname === "localhost") { //should be removed in production
+        } else if (loc.hostname === "localhost" || loc.hostname === "127.0.0.1") { //should be removed in production
             socket_url = "ws:";
         } else {
             alert("Diese Anwendung muss über HTTPS aufgerufen werden.");
@@ -35,32 +45,24 @@ class VideoConference extends HTMLElement {
         socket_url += "//" + socketHostname + socketPathname + "/" + params.get("action") + "/" + params.get("roomId") + "/" + params.get("userName");
         //ToDo: Seite für "Einladung" erstellen. Der Raumname ist bereits im Parameter gesetzt nur Username wird dann eingegeben.
         //ToDo: Quasi die Zwischenseite zwischem dem Anmelden und der Lobby
-
         //ToDo: Raum Id anzeigen in der Lobby
         navigator.mediaDevices.getUserMedia(videoConstraints)
             .then(function (stream) {
                 this._assignLocalStream(stream);
                 this._initSocket(socket_url);
             }.bind(this)).catch(function (error) {
-            alert(`getUserMedia error. ${error.message} \nPrüfen Sie ob eine Aufnahmegerät angeschlossen ist.`)
+            console.log(error);
+            alert("getUserMedia error: " + printException(error));
         });
     }
 
     _assignLocalStream(stream) {
         this.localStream = stream;
 
-        let localVideo = new HTMLVideoElement();
-        localVideo.id = "localVideo";
-        localVideo.autoplay = true;
-        localVideo.muted = true;
-        localVideo.playsinline = true;
-        localVideo.srcObject = this.localStream;
-        this.appendChild(localVideo);
-
-        const videoTracks = localStream.getVideoTracks();
+        const videoTracks = this.localStream.getVideoTracks();
         if (videoTracks.length > 0)
             console.log(`Using video device: ${videoTracks[0].label}`);
-        const audioTracks = localStream.getAudioTracks();
+        const audioTracks = this.localStream.getAudioTracks();
         if (audioTracks.length > 0)
             console.log(`Using audio device: ${audioTracks[0].label}`);
 
@@ -88,6 +90,7 @@ class VideoConference extends HTMLElement {
             switch (content.event) {
                 case "getNewUserId":
                     this.localSessionId = content.sessionId;
+                    this._appendVideoStream(this.localSessionId, content.userName, this.localStream); //create video stream of local user
                     break;
                 case "user-connected":  //also happens if you are the first one connecting, and no peer connection exists already. For every new user in the room every client has to create a new RTCPeerConnection
                     this.initNewPeerConnection(senderId, content.roomSize, content.roomParticipants);
@@ -139,12 +142,12 @@ class VideoConference extends HTMLElement {
         console.log(roomParticipants);
         roomParticipants.forEach(function (roomParticipant) {
             //check if the client does already have a connection && if the current roomParticipant isn't yourself (dont create a RTCPeerConnection for yourself)
-            if (!peerConnections[roomParticipant.sessionId] && roomParticipant.sessionId !== localSessionId) {
+            if (!this.peerConnections[roomParticipant.sessionId] && roomParticipant.sessionId !== this.localSessionId) {
                 console.log("init new peer connection for sessionId " + roomParticipant.sessionId);
-                peerConnections[roomParticipant.sessionId] = new RTCPeerConnection(this.servers);
-                peerConnections[roomParticipant.sessionId].onicecandidate = function (event) {
+                this.peerConnections[roomParticipant.sessionId] = new RTCPeerConnection(this.servers);
+                this.peerConnections[roomParticipant.sessionId].onicecandidate = function (event) {
                     if (event.candidate != null) {
-                        sendToServer({
+                        this.sendToServer({
                             event: "candidate",
                             senderSessionId: this.localSessionId,
                             targetSessionId: roomParticipant.sessionId,
@@ -152,19 +155,20 @@ class VideoConference extends HTMLElement {
                         });
                     }
                 }.bind(this);
-                peerConnections[roomParticipant.sessionId].ontrack = function (event) {
-                    gotRemoteStream(roomParticipant.sessionId, event);
-                };
-                for (const track of localStream.getTracks()) {
-                    peerConnections[roomParticipant.sessionId].addTrack(track, localStream);
+                this.peerConnections[roomParticipant.sessionId].ontrack = function (event) {
+                    this.gotRemoteStream(roomParticipant.sessionId, roomParticipant.userName, event);
+                }.bind(this);
+                for (const track of this.localStream.getTracks()) {
+                    console.log(track);
+                    this.peerConnections[roomParticipant.sessionId].addTrack(track, this.localStream);
                 }
             }
         }.bind(this));
 
         //send an offer back to the new client (the one that send the message "user-connected")
         //the new client itself should not send an offer to himself though
-        if (roomSize >= 2 && localSessionId !== senderSessionId) {
-            createOffer(senderSessionId);
+        if (roomSize >= 2 && this.localSessionId !== senderSessionId) {
+            this.createOffer(senderSessionId);
         }
     }
 
@@ -193,64 +197,64 @@ class VideoConference extends HTMLElement {
      */
 
     handleAnswer(senderId, answer) {
-        peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(answer)).then(success => {
+        this.peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(answer)).then(success => {
             console.log(`Connection established successfully!`);
         }).catch(error => {
-            console.log(`Error in handleAnswer ${senderId}, exception: ${error.message}`);
+            console.log("Error in handleAnswer ${senderId}, exception: " + printException(error));
         });
     }
 
     handleCandidate(senderId, candidate) {
-        peerConnections[senderId].addIceCandidate(new RTCIceCandidate(candidate)).catch(error => {
-            console.log(`Error in handleCandidate, exception: ${error.message}`);
+        this.peerConnections[senderId].addIceCandidate(new RTCIceCandidate(candidate)).catch(error => {
+            console.log("Error in handleCandidate, exception: " + printException(error));
         });
     }
 
     handleOffer(senderId, offer) {
-        peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(offer)).catch(error => {
-            console.log(`Error in handleOffer, exception: ${error.message}`);
+        this.peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(offer)).catch(error => {
+            console.log("Error in handleOffer, exception: " + printException(error));
         });
-        createAnswer(senderId);
+        this.createAnswer(senderId);
     }
 
     createOffer(senderId) {
-        peerConnections[senderId].createOffer().then(function (sessionDescription) {
-            peerConnections[senderId].setLocalDescription(sessionDescription).then(() => {
-                sendToServer({
+        this.peerConnections[senderId].createOffer().then(function (sessionDescription) {
+            this.peerConnections[senderId].setLocalDescription(sessionDescription).then(function () {
+                this.sendToServer({
                     event: "offer",
-                    senderSessionId: localSessionId,
+                    senderSessionId: this.localSessionId,
                     targetSessionId: senderId,
                     data: sessionDescription
                 });
-            }).catch(error => {
-                console.log(`Error in createOffer setLocal Description, exception: ${error.message}`);
+            }.bind(this)).catch(error => {
+                console.log("Error in createOffer setLocal Description, exception: " + printException(error));
             });
 
-        }).catch(function (error) {
-            alert("Error creating an offer: " + error.message);
+        }.bind(this)).catch(function (error) {
+            alert("Error creating an offer: " + printException(error));
         });
     }
 
     createAnswer(senderId) {
         // create and send an answer to an offer
-        peerConnections[senderId].createAnswer().then(function (sessionDescription) {
-            peerConnections[senderId].setLocalDescription(sessionDescription).catch(error => {
-                console.log(`Error in createAnswer setLocalDescription, exception: ${error.message}`);
+        this.peerConnections[senderId].createAnswer().then(function (sessionDescription) {
+            this.peerConnections[senderId].setLocalDescription(sessionDescription).catch(error => {
+                console.log("Error in createAnswer setLocalDescription, exception: " + printException(error));
             });
-            sendToServer({
+            this.sendToServer({
                 event: "answer",
-                senderSessionId: localSessionId,
+                senderSessionId: this.localSessionId,
                 targetSessionId: senderId,
                 data: sessionDescription
             });
-        }, function (error) {
-            alert("Error creating an answer: " + error.message);
+        }.bind(this), function (error) {
+            alert("Error creating an answer: " + printException(error));
         });
     }
 
     closePeerConnection(senderId) {
-        const index = peerConnections.indexOf(senderId);
-        peerConnections.splice(index, 1);
+        const index = this.peerConnections.indexOf(senderId);
+        this.peerConnections.splice(index, 1);
 
         let sessionVideo = document.querySelector('video[data-socket="' + senderId + '"]');
         sessionVideo.remove();
@@ -259,25 +263,41 @@ class VideoConference extends HTMLElement {
 
     /*
      * Check if there is already an existing <video> for this session. If there is one, the src object is updated with the media stream in the RTCTrackEvent.
-     * Otherwise there will be a new one created and appended. The session id is added to the <video> tag trough the 'data-socket' attribute to later connect it to the sessionId.
+     * Otherwise there will be a new one created and appended. The session id is added to the <video> tag trough the 'data-socket' attribute identify to which session/client it belongs
      */
-    gotRemoteStream(senderId, event) {
+    gotRemoteStream(senderId, userName, event) {
         console.log("got remote stream from " + senderId);
         const stream = event.streams[0];
         console.log(stream);
-        let sessionVideo = document.querySelector('video[data-socket="' + senderId + '"]');
+        let sessionVideo = document.querySelector("video-conference").shadowRoot.querySelector('video[data-socket="' + senderId + '"]');
         if (sessionVideo !== null) {
             sessionVideo.srcObject = stream;
         } else {
-            const video = document.createElement('video');
-
-            video.setAttribute('data-socket', senderId);
-            video.srcObject = stream;
-            video.autoplay = true;
-            video.playsinline = true;
-            this.appendChild(video);
+            this._appendVideoStream(senderId, userName, stream);
         }
     }
+
+    _appendVideoStream(senderId, userName, stream) {
+        const video = document.createElement('video');
+        video.setAttribute('data-socket', senderId);
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.playsinline = true;
+        const span = document.createElement('span');
+        span.classList.add("stream-headline");
+        span.textContent = userName;
+        if (senderId === this.localSessionId) {
+            video.muted = true;
+            span.textContent += " (Sie)";
+        }
+        const wrapper = document.createElement('div');
+        wrapper.append(span, video);
+        this.contentWrapper.append(wrapper);
+    }
+
 }
 
+function printException(error) {
+    return `${error.name}: ${error.message} \n${error.stack}`
+}
 customElements.define("video-conference", VideoConference);

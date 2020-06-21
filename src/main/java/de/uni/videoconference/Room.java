@@ -9,7 +9,6 @@ public class Room {
     private int maxUsers = 20;
     private String roomId;
     private Set<Session> sessions = Collections.synchronizedSet(new HashSet<>());
-
     public Room(String roomId) {
         this.roomId = roomId;
     }
