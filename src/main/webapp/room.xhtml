@@ -15,6 +15,8 @@
 <h:body>
     <title>Title</title>
     <main class="flex-center-both text-center">
+        <!--attribute socketHostname has to contain the port like e.g. localhost:8080. However socketHostname is not mandatory, as long
+        as the endpoint resides on the same host-->
         <video-conference socketPathname="/video-conference/signaling" template="video-conference-default">
             <span slot="video-conference headline">Video Konferenz</span>
         </video-conference>
