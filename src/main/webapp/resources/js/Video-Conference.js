@@ -23,6 +23,7 @@ class VideoConference extends HTMLElement {
 
     connectedCallback() {
         let loc = window.location; //https://developer.mozilla.org/en-US/docs/Web/API/Location
+        //get html element attributes
         let socketHostname = this.getAttribute("socketHostname");
         let socketPathname = this.getAttribute("socketPathname");
 
@@ -32,7 +33,7 @@ class VideoConference extends HTMLElement {
         if (typeof socketPathname === "undefined" || socketPathname === null) {
             socketPathname = "/video-conference/signaling";
         }
-        const videoConstraints = {video: true, audio: true};
+        // const videoConstraints = {video: true, audio: true};
         let params = new URLSearchParams(loc.search); //https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams
         let socket_url;
         if (loc.protocol === "https:") {
@@ -46,6 +47,7 @@ class VideoConference extends HTMLElement {
         //ToDo: Seite für "Einladung" erstellen. Der Raumname ist bereits im Parameter gesetzt nur Username wird dann eingegeben.
         //ToDo: Quasi die Zwischenseite zwischem dem Anmelden und der Lobby
         //ToDo: Raum Id anzeigen in der Lobby
+        const videoConstraints = {video: true, audio: true};
         navigator.mediaDevices.getUserMedia(videoConstraints)
             .then(function (stream) {
                 this._assignLocalStream(stream);
@@ -83,8 +85,6 @@ class VideoConference extends HTMLElement {
         this.socket.onmessage = function (event) {
             const content = JSON.parse(event.data);
             const data = content.data;
-            console.log(event);
-            console.log(content);
             const senderId = content.senderSessionId;
             const targetId = content.targetSessionId;
             switch (content.event) {
@@ -136,9 +136,6 @@ class VideoConference extends HTMLElement {
      https://github.com/kolson25/WebRTC-Multi-Peer-Video-Audio/blob/master/client/webrtc.js*/
     initNewPeerConnection(senderSessionId, roomSize, roomParticipants) {
         //even if you are the first user you have to create an rtc peer connection to send your stream data, however there wont be another rtc peer connection yet
-        /**
-         *
-         * */
         console.log(roomParticipants);
         roomParticipants.forEach(function (roomParticipant) {
             //check if the client does already have a connection && if the current roomParticipant isn't yourself (dont create a RTCPeerConnection for yourself)
@@ -159,7 +156,6 @@ class VideoConference extends HTMLElement {
                     this.gotRemoteStream(roomParticipant.sessionId, roomParticipant.userName, event);
                 }.bind(this);
                 for (const track of this.localStream.getTracks()) {
-                    console.log(track);
                     this.peerConnections[roomParticipant.sessionId].addTrack(track, this.localStream);
                 }
             }
@@ -256,7 +252,7 @@ class VideoConference extends HTMLElement {
         const index = this.peerConnections.indexOf(senderId);
         this.peerConnections.splice(index, 1);
 
-        let sessionVideo = document.querySelector('video[data-socket="' + senderId + '"]');
+        let sessionVideo = document.querySelector("video-conference").shadowRoot.querySelector('video[data-socket="' + senderId + '"]');
         sessionVideo.remove();
 
     }
